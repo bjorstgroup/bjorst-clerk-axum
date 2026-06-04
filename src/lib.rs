@@ -24,8 +24,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use axum::http::{HeaderMap, header};
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode, decode_header};
+use axum::http::{header, HeaderMap};
+use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -151,12 +151,7 @@ async fn fetch_jwks(
     client: &reqwest::Client,
     url: &str,
 ) -> Result<HashMap<String, serde_json::Value>, ClerkError> {
-    let body: serde_json::Value = client
-        .get(url)
-        .send()
-        .await?
-        .json()
-        .await?;
+    let body: serde_json::Value = client.get(url).send().await?.json().await?;
 
     let keys = body["keys"]
         .as_array()
@@ -214,9 +209,7 @@ pub async fn verify_token(
     let header = decode_header(token)?;
     let kid = header.kid.as_deref();
 
-    let keys = cache
-        .get_or_refresh(client, &config.jwks_url, kid)
-        .await?;
+    let keys = cache.get_or_refresh(client, &config.jwks_url, kid).await?;
 
     let jwk = keys
         .get(kid.unwrap_or(""))
@@ -240,8 +233,8 @@ pub async fn verify_token(
 fn decoding_key_from_jwk(jwk: &serde_json::Value) -> Result<DecodingKey, ClerkError> {
     // Build a minimal JwkSet from the single key and use jsonwebtoken's parser.
     let set = serde_json::json!({ "keys": [jwk] });
-    let jwk_set: jsonwebtoken::jwk::JwkSet = serde_json::from_value(set)
-        .map_err(|e| ClerkError::JwksParse(e.to_string()))?;
+    let jwk_set: jsonwebtoken::jwk::JwkSet =
+        serde_json::from_value(set).map_err(|e| ClerkError::JwksParse(e.to_string()))?;
 
     let key = jwk_set
         .keys
@@ -260,7 +253,7 @@ fn decoding_key_from_jwk(jwk: &serde_json::Value) -> Result<DecodingKey, ClerkEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::{HeaderMap, HeaderValue, header};
+    use axum::http::{header, HeaderMap, HeaderValue};
 
     #[test]
     fn extract_access_token_should_read_bearer_header() {
