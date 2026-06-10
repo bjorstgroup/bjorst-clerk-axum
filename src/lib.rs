@@ -24,12 +24,17 @@ use std::{
     time::{Duration, Instant},
 };
 
-use axum::http::{header, HeaderMap};
+use http::{header, HeaderMap};
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::warn;
+
+#[cfg(feature = "webhook")]
+pub mod webhook;
+#[cfg(feature = "webhook")]
+pub use webhook::{verify_webhook, WebhookError};
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
@@ -133,7 +138,7 @@ impl ClerkJwksCache {
         {
             let guard = self.inner.read().await;
             if let Some((fetched_at, ref keys)) = *guard {
-                let key_found = required_kid.map_or(true, |kid| keys.contains_key(kid));
+                let key_found = required_kid.is_none_or(|kid| keys.contains_key(kid));
                 if key_found && fetched_at.elapsed() < self.ttl {
                     return Ok(keys.clone());
                 }
@@ -253,7 +258,7 @@ fn decoding_key_from_jwk(jwk: &serde_json::Value) -> Result<DecodingKey, ClerkEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::{header, HeaderMap, HeaderValue};
+    use http::{header, HeaderMap, HeaderValue};
 
     #[test]
     fn extract_access_token_should_read_bearer_header() {
