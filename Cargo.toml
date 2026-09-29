@@ -11,7 +11,9 @@ http        = { version = "1" }
 reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde       = { version = "1", features = ["derive"] }
 serde_json  = "1"
-jsonwebtoken = "9"
+# 10.3+: RUSTSEC type confusion fixed. From 10 a crypto backend is chosen by
+# feature; `rust_crypto` keeps the build pure Rust.
+jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 thiserror   = "2"
 tracing     = "0.1"
 tokio       = { version = "1", features = ["time"] }
