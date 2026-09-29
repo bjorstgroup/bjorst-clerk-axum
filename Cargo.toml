@@ -7,16 +7,19 @@ license = "MIT"
 description = "Clerk JWT verification for Axum"
 
 [dependencies]
-http        = { version = "1" }
-reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-serde       = { version = "1", features = ["derive"] }
-serde_json  = "1"
-# 10.3+: RUSTSEC type confusion fixed. From 10 a crypto backend is chosen by
-# feature; `rust_crypto` keeps the build pure Rust.
-jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
 thiserror   = "2"
-tracing     = "0.1"
-tokio       = { version = "1", features = ["time"] }
+
+# The `jwt` feature (on by default): JWKS-backed session verification.
+http        = { version = "1", optional = true }
+reqwest     = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+serde       = { version = "1", features = ["derive"], optional = true }
+serde_json  = { version = "1", optional = true }
+# 10.3+: RUSTSEC type confusion fixed. From 10 a crypto backend is chosen by
+# feature; `rust_crypto` keeps the build pure Rust (it brings the `rsa` crate,
+# whose Marvin advisory concerns private-key operations, not verification).
+jsonwebtoken = { version = "10.3", features = ["rust_crypto"], optional = true }
+tracing     = { version = "0.1", optional = true }
+tokio       = { version = "1", features = ["time"], optional = true }
 
 # Optional — only pulled in with the `webhook` feature.
 hmac        = { version = "0.12", optional = true }
@@ -24,7 +27,9 @@ sha2        = { version = "0.10", optional = true }
 base64      = { version = "0.22", optional = true }
 
 [features]
-default = []
+# `jwt` stays on by default, so existing consumers see no change.
+default = ["jwt"]
+jwt = ["dep:http", "dep:reqwest", "dep:serde", "dep:serde_json", "dep:jsonwebtoken", "dep:tracing", "dep:tokio"]
 # Svix-signed Clerk webhook signature verification (verify_webhook).
 webhook = ["dep:hmac", "dep:sha2", "dep:base64"]
 
